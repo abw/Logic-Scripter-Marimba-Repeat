@@ -4,7 +4,7 @@
 // This script replicates the marimba repeat effect on the Lowrey Berkshire
 // Deluxe TBO-1 organ that Pete Townsend used in Baba O'Riley.
 //
-// It acts like a simple arpeggiator but with a twist.  Holding down any of the
+// It acts like a simple repeater but with a twist.  Holding down any of the
 // notes F, F#, G, B, C and C# will cause the note to be repeated on the beat
 // The other notes, G#, A, A#, D, D# and E are repeated off the beat.
 //
@@ -13,7 +13,7 @@
 
 NeedsTimingInfo = true;
 
-var DEBUG         = true,
+var DEBUG         = false,
     MINUTE_MS     = 60000,
     timing        = { },
     notesOnBeat   = { },
@@ -55,35 +55,36 @@ var PluginParameters = [
         minValue:       1,
         maxValue:       100,
         numberOfSteps:  99,
-        defaultValue:   85
-    },
-    {
-        name:           "Tempo Match",
-        type:           "linear",
-        defaultValue:   100,
-        minValue:       0,
-        maxValue:       100,
-        numberOfSteps:  100,
-        unit:           "%"
-    },
-    {
-        name:           "Min. Tolerance",
-        type:           "linear",
-        defaultValue:   5,
-        minValue:       0,
-        maxValue:       49,
-        numberOfSteps:  49,
-        unit:           "%"
-    },
-    {
-        name:           "Max. Tolerance",
-        type:           "linear",
-        defaultValue:   30,
-        minValue:       0,
-        maxValue:       49,
-        numberOfSteps:  49,
-        unit:           "%"
+        defaultValue:   50
     }
+    //,
+    //{
+    //    name:           "Tempo Match",
+    //    type:           "linear",
+    //    defaultValue:   100,
+    //    minValue:       0,
+    //    maxValue:       100,
+    //    numberOfSteps:  100,
+    //    unit:           "%"
+    //},
+    //{
+    //    name:           "Min. Tolerance",
+    //    type:           "linear",
+    //    defaultValue:   5,
+    //    minValue:       0,
+    //    maxValue:       49,
+    //    numberOfSteps:  49,
+    //    unit:           "%"
+    //},
+    //{
+    //    name:           "Max. Tolerance",
+    //    type:           "linear",
+    //    defaultValue:   30,
+    //    minValue:       0,
+    //    maxValue:       49,
+    //    numberOfSteps:  49,
+    //    unit:           "%"
+    //}
 ];
 
 //-------------------------------------------------------------
@@ -118,7 +119,7 @@ function ProcessMIDI() {
     }
 
     if (t.tick) {
-         //debug('tick');
+        //debug('tick');
         triggerNotes(notesOnBeat);
     }
     else if (t.tock) {
@@ -143,13 +144,10 @@ function tick() {
         half  = timing.half  = step / 2,
         now   = timing.now   = new Date().getTime();
 
-    //debug("divn:", divn, " tempo:", tempo, " bpm:", bpm, " spm:", spm, " beat:", beat, " half:", half);
+    //debug("divn:", divn, " tempo:", tempo, " bpm:", bpm, " spm:", spm, " beat:", beat, " step:", step);
 
     if (timing.ticked) {
         var diff = timing.diff = now - timing.ticked;
-
-        timing.tick = false;
-        timing.tock = false;
 
         if (diff > step) {
             timing.ticked = now;
@@ -160,6 +158,10 @@ function tick() {
         else if (diff > half && ! timing.tocked) {
             timing.tocked   = now;
             timing.tock     = true;
+        }
+        else {
+            timing.tick = false;
+            timing.tock = false;
         }
     }
     else {
@@ -188,13 +190,14 @@ function noteOn(e) {
         firstNoteOn(e);
     }
     notesOn++;
-    checkTempo();
+    //checkTempo();
 }
 
 function firstNoteOn(e) {
     debug("FIRST NOTE ON: ", e);
     timing.bpm    = timing.tempo;
     timing.ticked = new Date().getTime();
+    triggerNotes(notesOnBeat);
 }
 
 function noteOff(e) {
@@ -213,7 +216,7 @@ function NEW_checkTempo() {
 
 function checkTempo() {
     var t = tick();
-
+    return;
     if (! t.diff) return;
 
     var dt  = t.diff,
